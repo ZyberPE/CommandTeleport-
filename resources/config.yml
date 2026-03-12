@@ -1,0 +1,19 @@
+commands:
+
+  enchanttp:
+    description: "Teleport to the enchant area"
+    permission: "enchanttp.use"
+    world: "enchant"
+    x: 100
+    y: 65
+    z: 200
+    message: "§aTeleporting to Enchant Area..."
+
+  spawntp:
+    description: "Teleport to spawn"
+    permission: "spawn.use"
+    world: "world"
+    x: 0
+    y: 70
+    z: 0
+    message: "§eTeleporting to Spawn..."
