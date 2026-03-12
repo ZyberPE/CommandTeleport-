@@ -1,0 +1,6 @@
+name: CommandTeleport
+main: CommandTeleport\Main
+version: 1.0.0
+api: 5.0.0
+author: ZyberPE
+description: Create teleport commands from config
