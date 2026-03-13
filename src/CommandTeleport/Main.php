@@ -3,53 +3,71 @@
 namespace CommandTeleport;
 
 use pocketmine\plugin\PluginBase;
-use pocketmine\event\Listener;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\player\Player;
-use pocketmine\utils\Config;
+use pocketmine\permission\Permission;
+use pocketmine\permission\PermissionManager;
 use pocketmine\world\Position;
 
-class Main extends PluginBase implements Listener{
-
-    private array $teleportCommands = [];
+class Main extends PluginBase{
 
     public function onEnable(): void{
         $this->saveDefaultConfig();
-        $this->loadCommands();
+        $this->registerCommands();
     }
 
-    private function loadCommands(): void{
-        $config = $this->getConfig()->get("commands", []);
+    private function registerCommands(): void{
 
-        foreach($config as $cmd => $data){
-            $command = new class($cmd, $data["description"] ?? "", $data["permission"] ?? "", $this) extends Command{
+        $cmds = $this->getConfig()->get("commands", []);
+        $permManager = PermissionManager::getInstance();
 
-                private $plugin;
-                private $data;
+        foreach($cmds as $name => $data){
 
-                public function __construct(string $name, string $description, string $permission, Main $plugin){
-                    parent::__construct($name, $description);
-                    $this->setPermission($permission);
+            $permission = $data["permission"];
+
+            // Register permission safely
+            if($permManager->getPermission($permission) === null){
+                $permManager->addPermission(new Permission($permission));
+            }
+
+            $command = new class($this, $name, $data) extends Command{
+
+                private Main $plugin;
+                private array $data;
+
+                public function __construct(Main $plugin, string $name, array $data){
+                    parent::__construct($name, $data["description"] ?? "");
                     $this->plugin = $plugin;
-                    $this->data = $plugin->getConfig()->get("commands")[$name];
+                    $this->data = $data;
+                    $this->setPermission($data["permission"]);
                 }
 
                 public function execute(CommandSender $sender, string $label, array $args): bool{
 
+                    $config = $this->plugin->getConfig();
+
                     if(!$sender instanceof Player){
-                        $sender->sendMessage("Run this command in game.");
+                        $sender->sendMessage($config->get("messages")["console"]);
                         return true;
                     }
 
-                    if(!$this->testPermission($sender)){
+                    if(!$sender->hasPermission($this->data["permission"])){
+                        $sender->sendMessage($config->get("messages")["no-permission"]);
                         return true;
                     }
 
-                    $world = $this->plugin->getServer()->getWorldManager()->getWorldByName($this->data["world"]);
+                    $worldName = $this->data["world"];
+                    $wm = $this->plugin->getServer()->getWorldManager();
+
+                    if(!$wm->isWorldLoaded($worldName)){
+                        $wm->loadWorld($worldName);
+                    }
+
+                    $world = $wm->getWorldByName($worldName);
 
                     if($world === null){
-                        $sender->sendMessage("§cWorld not found.");
+                        $sender->sendMessage($config->get("messages")["world-not-found"]);
                         return true;
                     }
 
@@ -61,7 +79,7 @@ class Main extends PluginBase implements Listener{
                     );
 
                     $sender->teleport($pos);
-                    $sender->sendMessage($this->data["message"] ?? "§aTeleported!");
+                    $sender->sendMessage($this->data["message"] ?? "§aTeleported.");
 
                     return true;
                 }
