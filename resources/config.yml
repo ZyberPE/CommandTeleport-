@@ -1,3 +1,8 @@
+messages:
+  no-permission: "§cYou don't have permission to use this command."
+  console: "§cRun this command in-game."
+  world-not-found: "§cWorld not found."
+
 commands:
 
   enchanttp:
